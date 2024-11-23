@@ -1,12 +1,13 @@
+.intel_syntax noprefix
 .globl plus, main
 
 plus:
-    add w0, w0, w1
-    mov w3, w0
-    ret
+        add rsi, rdi
+        mov rax, rsi
+        ret
 
 main:
-    mov w0, 3
-    mov w1, 4
-    b plus
-    ret
+        mov rdi, 3
+        mov rsi, 4
+        call plus
+        ret

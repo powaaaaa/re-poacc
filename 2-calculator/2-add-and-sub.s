@@ -1,7 +1,8 @@
+.intel_syntax noprefix
 .globl main
 
 main:
-        mov w0, 5
-        add w0, w0, 20
-        sub w0, w0, 4
+        mov rax, 5
+        add rax, 20
+        sub rax, 4
         ret

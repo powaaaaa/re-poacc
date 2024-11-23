@@ -2,7 +2,7 @@
 # CFLAGS=-std=c13 -g -static
 
 # Docker用のプレフィックス
-DOCKER=docker run --rm -v $(POACC):/poacc -w /poacc poacompiler
+DOCKER=docker run --rm -v $(POACC):/poacc -w /poacc poa-compiler
 
 # ターゲットと依存関係
 poacc: poacc.c
