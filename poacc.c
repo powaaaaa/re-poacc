@@ -65,7 +65,7 @@ bool consume(char *op){
 
 // 次のtokenが期待している記号のとき, tokenを1つ読み進める. それ以外はerrorを報告する.
 void expect(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcpm(token->str[0], op, token->len))
+  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str[0], op, token->len))
     error_at(token->str, "'%s'ではありません", op);
   token = token->next;
 }
@@ -93,6 +93,10 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   return tok;
 }
 
+bool startswith(char *p, char *q) {
+  return memcmp(p, q, strlen(q)) == 0;
+}
+
 // 入力文字列pをtokenizeして返す
 Token *tokenize() {
   char *p = user_input;
@@ -107,11 +111,20 @@ Token *tokenize() {
       continue;
     }
 
-    if(strchr("+-*/()", *p)) {
+    // 複数文字
+    if(startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
+      cur = new_token(TK_RESERVED, cur, p, 2);
+      p += 2;
+      continue;
+    }
+
+    // 1文字
+    if(strchr("+-*/()<>", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
 
+    // 数値
     if(isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
       char *q = p;
