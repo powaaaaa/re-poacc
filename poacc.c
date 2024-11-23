@@ -16,8 +16,8 @@ typedef enum {
   TK_EOF,    // EOF
 } TokenKind;
 
+// tokenの型
 typedef struct Token Token;
-
 struct Token {
   TokenKind kind;  // tokenの型
   Token *next;    // 次の入力token
@@ -168,9 +168,15 @@ struct Node {
 };
 
 // 左辺と右辺を受け取るnodeを作成
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
+  return node;
+}
+
+// 左辺と右辺を受け取るnodeを作成
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+  Node *node = new_node(kind);
   node->lhs = lhs;
   node->rhs = rhs;
   return node;
@@ -178,8 +184,7 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
 
 // 数値を受け取るnodeを作成
 Node *new_node_num(int val) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = NODE_NUM;
+  Node *node = new_node(NODE_NUM);
   node->val = val;
   return node;
 }
@@ -203,9 +208,9 @@ Node *equality() {
 
   for(;;) {
     if(consume("=="))
-      node = new_node(NODE_EQ, node, relational());
+      node = new_binary(NODE_EQ, node, relational());
     else if(consume("!="))
-        node = new_node(NODE_NE, node, relational());
+        node = new_binary(NODE_NE, node, relational());
     else
       return node;
   }
@@ -217,13 +222,13 @@ Node *relational() {
 
   for(;;) {
     if(consume("<"))
-      node = new_node(NODE_LT, node, add());
+      node = new_binary(NODE_LT, node, add());
     else if(consume("<="))
-      node = new_node(NODE_LE, node, add());
+      node = new_binary(NODE_LE, node, add());
     else if(consume(">"))
-      node = new_node(NODE_LT, add(), node);
+      node = new_binary(NODE_LT, add(), node);
     else if(consume(">="))
-      node = new_node(NODE_LE, add(), node);
+      node = new_binary(NODE_LE, add(), node);
     else
       return node;
   }
@@ -235,9 +240,9 @@ Node *add() {
 
   for(;;){
     if(consume("+"))
-      node = new_node(NODE_ADD, node, mul());
+      node = new_binary(NODE_ADD, node, mul());
     else if(consume("-"))
-      node = new_node(NODE_SUB, node, mul());
+      node = new_binary(NODE_SUB, node, mul());
     else
       return node;
   }
@@ -250,9 +255,9 @@ Node *mul() {
   // 左結合
   for(;;) {
     if(consume("*"))
-      node = new_node(NODE_MUL, node, unary());
+      node = new_binary(NODE_MUL, node, unary());
     else if(consume("/"))
-      node = new_node(NODE_DIV, node, unary());
+      node = new_binary(NODE_DIV, node, unary());
     else
       return node;
   }
@@ -263,7 +268,7 @@ Node *unary() {
   if(consume("+"))
     return unary();
   if(consume("-"))
-    return new_node(NODE_SUB, new_node_num(0), unary());
+    return new_binary(NODE_SUB, new_node_num(0), unary());
   return primary();
 }
 
