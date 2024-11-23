@@ -1,5 +1,7 @@
 [低レイヤを知りたい人のための C コンパイラ作成入門](https://www.sigbus.info/compilerbook)
 
+[文法メモ](./grammar.md)
+
 # 環境構築
 
 (付録 3 から引用)
