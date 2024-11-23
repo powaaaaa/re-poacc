@@ -24,11 +24,29 @@ struct Token {
 // 現在注目してるtoken
 Token *token;
 
+// 入力プログラム
+char *user_input;
+
 // errorを報告する関数
 // printfと同じ引数を取る
 void error(char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
+
+// error箇所を報告する
+void error_at(char *loc, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, " ");    // pos個の空白を出力
+  fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
@@ -44,13 +62,13 @@ bool consume(char op){
 // 次のtokenが期待している記号のとき, tokenを1つ読み進める. それ以外はerrorを報告する.
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op)
-    error("'%c'ではありません", op);
+    error_at(token->str, "'%c'ではありません", op);
   token = token->next;
 }
 
 // 次のtokenが数値の場合, tokenを1つ読み進めてその数値を返す. それ以外はerrorを報告する.
 int expect_number() {
-  if(token->kind != TK_NUM) error("数ではありません");
+  if(token->kind != TK_NUM) error_at(token->str, "数ではありません");
   int val = token->val;
   token = token->next;
   return val;
@@ -71,7 +89,8 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
 }
 
 // 入力文字列pをtokenizeして返す
-Token *tokenize(char *p) {
+Token *tokenize() {
+  char *p = user_input;
   Token head;
   head.next = NULL;
   Token *cur = &head;
@@ -94,7 +113,7 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    error("tokenizeできません");
+    error_at(p, "数ではありません");
   }
 
   new_token(TK_EOF, cur, p);
@@ -108,7 +127,8 @@ int main(int argc, char **argv) {
   }
 
   // tokenizeする
-  token = tokenize(argv[1]);
+  user_input = argv[1];
+  token = tokenize();
 
   // アセンブリ冒頭部分
   printf(".globl main\n");
