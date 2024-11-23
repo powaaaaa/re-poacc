@@ -20,5 +20,7 @@ assert() {
 # step1 数値を返す
 assert 0 0
 assert 42 42
+# step2 加減算
+assert 21 "5+20-4"
 
 echo OK
