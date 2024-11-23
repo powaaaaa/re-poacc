@@ -7,7 +7,7 @@
 image を build
 
 ```
-$ docker build ./ -t poa-compiler
+$ docker build ./ -t poa-compiler --platform linux/amd64
 ```
 
 コンテナ内でコマンド実行例
