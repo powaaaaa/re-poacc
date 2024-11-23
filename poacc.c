@@ -57,7 +57,7 @@ void error_at(char *loc, char *fmt, ...) {
 
 // 次のtokenが期待している記号のとき, tokenを1つ読み進めて真を返す. それ以外は偽を返す.
 bool consume(char *op){
-  if(token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str[0], op, token->len))
+  if(token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len))
     return false;
   token = token->next;
   return true;
@@ -65,7 +65,7 @@ bool consume(char *op){
 
 // 次のtokenが期待している記号のとき, tokenを1つ読み進める. それ以外はerrorを報告する.
 void expect(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str[0], op, token->len))
+  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len))
     error_at(token->str, "'%s'ではありません", op);
   token = token->next;
 }
@@ -150,6 +150,10 @@ typedef enum {
   NODE_SUB,    // -
   NODE_MUL,    // *
   NODE_DIV,    // /
+  NODE_EQ,    // ==
+  NODE_NE,    // !=
+  NODE_LT,    // <
+  NODE_LE,    // <=
   NODE_NUM,    // 整数
 } NodeKind;
 
@@ -181,19 +185,58 @@ Node *new_node_num(int val) {
 }
 
 Node *expr();
+Node *equality();
+Node *relational();
+Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
 
-// parser: `expr = mul ("+" mul | "-" mul)*`
+// parser: `expr = equality`
 Node *expr() {
+  return equality();
+}
+
+// parser: `equality = relational ("==" relational | "!=" relational)*`
+Node *equality() {
+  Node *node = relational();
+
+  for(;;) {
+    if(consume("=="))
+      node = new_node(NODE_EQ, node, relational());
+    else if(consume("!="))
+        node = new_node(NODE_NE, node, relational());
+    else
+      return node;
+  }
+}
+
+// parser: `relational = add ("<" add | "<=" add | ">" add | ">=" add)*`
+Node *relational() {
+  Node *node = add();
+
+  for(;;) {
+    if(consume("<"))
+      node = new_node(NODE_LT, node, add());
+    else if(consume("<="))
+      node = new_node(NODE_LE, node, add());
+    else if(consume(">"))
+      node = new_node(NODE_LT, add(), node);
+    else if(consume(">="))
+      node = new_node(NODE_LE, add(), node);
+    else
+      return node;
+  }
+}
+
+// parser: `add = mul ("+" mul | "-" mul)*`
+Node *add() {
   Node *node = mul();
 
-  // 左結合
-  for(;;) {
-    if(consume('+'))
+  for(;;){
+    if(consume("+"))
       node = new_node(NODE_ADD, node, mul());
-    else if(consume('-'))
+    else if(consume("-"))
       node = new_node(NODE_SUB, node, mul());
     else
       return node;
@@ -206,9 +249,9 @@ Node *mul() {
 
   // 左結合
   for(;;) {
-    if(consume('*'))
+    if(consume("*"))
       node = new_node(NODE_MUL, node, unary());
-    else if(consume('/'))
+    else if(consume("/"))
       node = new_node(NODE_DIV, node, unary());
     else
       return node;
@@ -217,9 +260,9 @@ Node *mul() {
 
 // parser: `unary - ("+" | "-")? unary | primary`
 Node *unary() {
-  if(consume('+'))
+  if(consume("+"))
     return unary();
-  if(consume('-'))
+  if(consume("-"))
     return new_node(NODE_SUB, new_node_num(0), unary());
   return primary();
 }
@@ -227,9 +270,9 @@ Node *unary() {
 // parser: `primary = "num | (" expr ")"`
 Node *primary() {
   // 次のtokenが"("なら, "(" expr ")"
-  if(consume('(')) {
+  if(consume("(")) {
     Node *node = expr();
-    expect(')');
+    expect(")");
     return node;
   }
 
@@ -266,6 +309,26 @@ void gen(Node *node) {
     case NODE_DIV:
       printf("    cqo\n");
       printf("    idiv rdi\n");
+      break;
+    case NODE_EQ:
+      printf("    cmp rax, rdi\n");
+      printf("    sete al\n");
+      printf("    movzb rax, al\n");
+      break;
+    case NODE_NE:
+      printf("    cmp rax, rdi\n");
+      printf("    setne al\n");
+      printf("    movzb rax, al\n");
+      break;
+    case NODE_LT:
+      printf("    cmp rax, rdi\n");
+      printf("    setl al\n");
+      printf("    movzb rax, al\n");
+      break;
+    case NODE_LE:
+      printf("    cmp rax, rdi\n");
+      printf("    setle al\n");
+      printf("    movzb rax, al\n");
       break;
   }
 
