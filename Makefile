@@ -1,12 +1,16 @@
-# コンパイルフラグ
-# CFLAGS=-std=c13 -g -static
+CFLAGS=-std=c11 -g -static
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
 # Docker用のプレフィックス
-DOCKER=docker run --rm -v $(POACC):/poacc -w /poacc poa-compiler
+DOCKER=docker run --rm --platform linux/amd64 -v $(POACC):/poacc -w /poacc poa-compiler
 
 # ターゲットと依存関係
-poacc: poacc.c
-	$(DOCKER) gcc -o $@ $<
+poacc: $(OBJS)
+	$(DOCKER) gcc -o $@ $(OBJS) $(LDFLAGS)
+
+%.o: %.c
+	$(DOCKER) gcc -c -o $@ $<
 
 test: poacc
 	$(DOCKER) ./test.sh

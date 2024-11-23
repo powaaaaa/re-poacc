@@ -1,30 +1,12 @@
 #include <ctype.h>
 #include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "poacc.h"
 
 /*
 ******** TOKEN ********
 */
-
-// tokenの種類
-typedef enum {
-  TK_RESERVED,  // 記号
-  TK_NUM,    // 整数トークン
-  TK_EOF,    // EOF
-} TokenKind;
-
-// tokenの型
-typedef struct Token Token;
-struct Token {
-  TokenKind kind;  // tokenの型
-  Token *next;    // 次の入力token
-  int val;    // kindがTK_NUMの場合の数値
-  char *str;    // token文字列
-  int len;    // tokenの長さ
-};
 
 // 現在注目してるtoken
 Token *token;
@@ -144,29 +126,6 @@ Token *tokenize() {
 ******** PARSER ********
 */
 
-// 抽象構文木のnodeの種類
-typedef enum {
-  NODE_ADD,    // +
-  NODE_SUB,    // -
-  NODE_MUL,    // *
-  NODE_DIV,    // /
-  NODE_EQ,    // ==
-  NODE_NE,    // !=
-  NODE_LT,    // <
-  NODE_LE,    // <=
-  NODE_NUM,    // 整数
-} NodeKind;
-
-typedef struct Node Node;
-
-// 抽象構文木のnodeの型
-struct Node {
-  NodeKind kind;    // nodeの種類
-  Node *lhs;    // 左辺
-  Node *rhs;    // 右辺
-  int val;    // kindがNODE_NUMのとき使う
-};
-
 // 左辺と右辺を受け取るnodeを作成
 Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
@@ -188,14 +147,6 @@ Node *new_node_num(int val) {
   node->val = val;
   return node;
 }
-
-Node *expr();
-Node *equality();
-Node *relational();
-Node *add();
-Node *mul();
-Node *unary();
-Node *primary();
 
 // parser: `expr = equality`
 Node *expr() {
@@ -283,87 +234,4 @@ Node *primary() {
 
   // そうでなければ, 数値
   return new_node_num(expect_number());
-}
-
-/*
-******** CODE GENERATOR ********
-*/
-
-void gen(Node *node) {
-  if(node->kind == NODE_NUM) {
-    printf("    push %d\n", node->val);
-    return;
-  }
-
-  gen(node->lhs);
-  gen(node->rhs);
-
-  printf("    pop rdi\n");
-  printf("    pop rax\n");
-
-  switch(node->kind) {
-    case NODE_ADD:
-      printf("    add rax, rdi\n");
-      break;
-    case NODE_SUB:
-      printf("    sub rax, rdi\n");
-      break;
-    case NODE_MUL:
-      printf("    imul rax, rdi\n");
-      break;
-    case NODE_DIV:
-      printf("    cqo\n");
-      printf("    idiv rdi\n");
-      break;
-    case NODE_EQ:
-      printf("    cmp rax, rdi\n");
-      printf("    sete al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_NE:
-      printf("    cmp rax, rdi\n");
-      printf("    setne al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_LT:
-      printf("    cmp rax, rdi\n");
-      printf("    setl al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_LE:
-      printf("    cmp rax, rdi\n");
-      printf("    setle al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_NUM:
-      break;
-  }
-
-  printf("    push rax\n");
-}
-
-int main(int argc, char **argv) {
-  if(argc != 2) {
-    fprintf(stderr, "引数の個数が正しくありません\n");
-    return 1;
-  }
-
-  // tokenize, parseする
-  user_input = argv[1];
-  token = tokenize();
-  Node *node = expr();
-
-  // アセンブリ冒頭部分
-  printf(".intel_syntax noprefix\n");
-  printf(".globl main\n");
-  printf("main:\n");
-
-  // 抽象構文木を下りながらコード生成
-  gen(node);
-
-  // スタックトップの式全体の値をloadして返り値にする
-  printf("    pop rax\n");
-  printf("    ret\n");
-  printf(".section	.note.GNU-stack,\"\",@progbits\n");
-  return 0;
 }
