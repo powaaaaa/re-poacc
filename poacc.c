@@ -164,6 +164,7 @@ Node *new_node_num(int val) {
 
 Node *expr();
 Node *mul();
+Node *unary();
 Node *primary();
 
 // parser: `expr = mul ("+" mul | "-" mul)*`
@@ -181,22 +182,31 @@ Node *expr() {
   }
 }
 
-// parser: `mul = primary ("*" primary | "/" primary)*`
+// parser: `mul = unary ("*" unary | "/" unary)*`
 Node *mul() {
-  Node *node = primary();
+  Node *node = unary();
 
   // 左結合
   for(;;) {
     if(consume('*'))
-      node = new_node(NODE_MUL, node, primary());
+      node = new_node(NODE_MUL, node, unary());
     else if(consume('/'))
-      node = new_node(NODE_DIV, node, primary());
+      node = new_node(NODE_DIV, node, unary());
     else
       return node;
   }
 }
 
-// parser: `primary = "(" expr ")" | num`
+// parser: `unary - ("+" | "-")? unary | primary`
+Node *unary() {
+  if(consume('+'))
+    return unary();
+  if(consume('-'))
+    return new_node(NODE_SUB, new_node_num(0), unary());
+  return primary();
+}
+
+// parser: `primary = "num | (" expr ")"`
 Node *primary() {
   // 次のtokenが"("なら, "(" expr ")"
   if(consume('(')) {
