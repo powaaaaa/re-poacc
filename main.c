@@ -9,19 +9,18 @@ int main(int argc, char **argv) {
   // tokenize, parseする
   user_input = argv[1];
   token = tokenize();
-  Node *node = expr();
+  Program *prog = program();
 
-  // アセンブリ冒頭部分
-  printf(".intel_syntax noprefix\n");
-  printf(".globl main\n");
-  printf("main:\n");
+  // ローカル変数にoffsetをセット
+  int offset = 0;
+  for(Var *var = prog->locals; var; var = var->next) {
+    offset += 8;
+    var->offset = offset;
+  }
+  prog->stack_size = offset;
 
-  // 抽象構文木を下りながらコード生成
-  gen(node);
+  // アセンブリ生成
+  codegen(prog);
 
-  // スタックトップの式全体の値をloadして返り値にする
-  printf("    pop rax\n");
-  printf("    ret\n");
-  printf(".section	.note.GNU-stack,\"\",@progbits\n");
   return 0;
 }
