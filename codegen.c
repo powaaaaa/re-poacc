@@ -1,22 +1,20 @@
 #include "poacc.h"
 
-/*
-******** CODE GENERATOR ********
-*/
-
-void gen_lval(Node *node) {
-  if(node->kind == NODE_VAR) {
-    printf("lea rax, [rbp-%d]\n", node->var->offset);
-    printf("push rax\n");
+// Pushes the given node's address to the stack.
+void gen_addr(Node *node) {
+  if (node->kind == NODE_VAR) {
+    printf("    lea rax, [rbp-%d]\n", node->var->offset);
+    printf("    push rax\n");
     return;
   }
+
   error("not an lvalue");
 }
 
 void load() {
-    printf("    pop rax\n");
-    printf("    mov rax, [rax]\n");
-    printf("    push rax\n");
+  printf("    pop rax\n");
+  printf("    mov rax, [rax]\n");
+  printf("    push rax\n");
 }
 
 void store() {
@@ -26,20 +24,22 @@ void store() {
   printf("    push rdi\n");
 }
 
+// Generate code for a given node.
 void gen(Node *node) {
-  switch(node->kind) {
+  switch (node->kind) {
     case NODE_NUM:
       printf("    push %d\n", node->val);
       return;
     case NODE_EXPR_STMT:
       gen(node->lhs);
       printf("    add rsp, 8\n");
+      return;
     case NODE_VAR:
-      gen_lval(node);
+      gen_addr(node);
       load();
       return;
     case NODE_ASSIGN:
-      gen_lval(node->lhs);
+      gen_addr(node->lhs);
       gen(node->rhs);
       store();
       return;
@@ -56,63 +56,60 @@ void gen(Node *node) {
   printf("    pop rdi\n");
   printf("    pop rax\n");
 
-  switch(node->kind) {
-    case NODE_ADD:
-      printf("    add rax, rdi\n");
-      break;
-    case NODE_SUB:
-      printf("    sub rax, rdi\n");
-      break;
-    case NODE_MUL:
-      printf("    imul rax, rdi\n");
-      break;
-    case NODE_DIV:
-      printf("    cqo\n");
-      printf("    idiv rdi\n");
-      break;
-    case NODE_EQ:
-      printf("    cmp rax, rdi\n");
-      printf("    sete al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_NE:
-      printf("    cmp rax, rdi\n");
-      printf("    setne al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_LT:
-      printf("    cmp rax, rdi\n");
-      printf("    setl al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_LE:
-      printf("    cmp rax, rdi\n");
-      printf("    setle al\n");
-      printf("    movzb rax, al\n");
-      break;
-    case NODE_NUM:
-      break;
+  switch (node->kind) {
+  case NODE_ADD:
+    printf("    add rax, rdi\n");
+    break;
+  case NODE_SUB:
+    printf("    sub rax, rdi\n");
+    break;
+  case NODE_MUL:
+    printf("    imul rax, rdi\n");
+    break;
+  case NODE_DIV:
+    printf("    cqo\n");
+    printf("    idiv rdi\n");
+    break;
+  case NODE_EQ:
+    printf("    cmp rax, rdi\n");
+    printf("    sete al\n");
+    printf("    movzb rax, al\n");
+    break;
+  case NODE_NE:
+    printf("    cmp rax, rdi\n");
+    printf("    setne al\n");
+    printf("    movzb rax, al\n");
+    break;
+  case NODE_LT:
+    printf("    cmp rax, rdi\n");
+    printf("    setl al\n");
+    printf("    movzb rax, al\n");
+    break;
+  case NODE_LE:
+    printf("    cmp rax, rdi\n");
+    printf("    setle al\n");
+    printf("    movzb rax, al\n");
+    break;
   }
 
   printf("    push rax\n");
 }
 
 void codegen(Program *prog) {
-  // アセンブリ冒頭部分
   printf(".intel_syntax noprefix\n");
-  printf(".globl main\n");
+  printf(".global main\n");
   printf("main:\n");
 
-  // プロローグ. 変数26個分の領域を確保
+  // Prologue
   printf("    push rbp\n");
   printf("    mov rbp, rsp\n");
   printf("    sub rsp, %d\n", prog->stack_size);
 
-  for(Node *node = prog->node; node; node = node->next) {
+  // Emit code
+  for (Node *node = prog->node; node; node = node->next)
     gen(node);
-  }
 
-  // エピローグ. 最後の式の結果を返り値
+  // Epilogue
   printf(".Lreturn:\n");
   printf("    mov rsp, rbp\n");
   printf("    pop rbp\n");

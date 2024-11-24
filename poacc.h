@@ -8,41 +8,39 @@
 ******** TOKEN ********
 */
 
-// tokenの種類
+// Token
 typedef enum {
-  TK_RESERVED,  // 記号
+  TK_RESERVED, // Keywords or punctuators
   TK_IDENT,    // 識別子
-  TK_NUM,    // 整数トークン
-  TK_EOF,    // EOF
+  TK_NUM,      // 整数リテラル
+  TK_EOF,      // EOFマーカー
 } TokenKind;
 
-// tokenの型
+// Token type
 typedef struct Token Token;
 struct Token {
-  TokenKind kind;  // tokenの型
-  Token *next;    // 次の入力token
-  int val;    // kindがTK_NUMの場合の数値
-  char *str;    // token文字列
-  int len;    // tokenの長さ
+  TokenKind kind; // tokenの種類
+  Token *next;    // 次のtoken
+  int val;        // TK_NUM時の値
+  char *str;      // tokenの文字列
+  int len;        // tokenの長さ
 };
-
-// 現在注目してるtoken
-extern Token *token;
-
-// 入力プログラム
-extern char *user_input;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool consume(char *op);
-Token *consume_ident();
 char *strndupl(char *p, int len);
+Token *consume_ident();
 void expect(char *op);
 int expect_number();
 bool at_eof();
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
-bool startswith(char *p, char *q);
 Token *tokenize();
+
+// グローバル変数
+
+extern char *user_input;
+extern Token *token;
 
 /*
 ******** PARSER ********
@@ -52,47 +50,43 @@ Token *tokenize();
 typedef struct Var Var;
 struct Var {
   Var *next;
-  char *name;    // 変数名
-  int offset;    // RBPからのオフセット
+  char *name; // 変数名
+  int offset; // RBPからのoffset
 };
 
-// 抽象構文木
+// AST node
 typedef enum {
-  NODE_ADD,    // +
-  NODE_SUB,    // -
-  NODE_MUL,    // *
-  NODE_DIV,    // /
-  NODE_EQ,    // ==
-  NODE_NE,    // !=
-  NODE_LT,    // <
-  NODE_LE,    // <=
+  NODE_ADD,       // +
+  NODE_SUB,       // -
+  NODE_MUL,       // *
+  NODE_DIV,       // /
+  NODE_EQ,        // ==
+  NODE_NE,        // !=
+  NODE_LT,        // <
+  NODE_LE,        // <=
   NODE_ASSIGN,    // =
   NODE_RETURN,    // "return"
   NODE_EXPR_STMT, // Expression statement
-  NODE_VAR,    // 変数
-  NODE_NUM,    // 整数
+  NODE_VAR,       // 変数
+  NODE_NUM,       // 整数
 } NodeKind;
 
-// nodeの型
+// AST node type
 typedef struct Node Node;
 struct Node {
-  NodeKind kind;    // nodeの種類
-  Node *next;    // 次のnode
-  Node *lhs;    // 左辺
-  Node *rhs;    // 右辺
-  Var *var;    // NODE_VARのとき使う
-  int val;    // NODE_NUMのとき使う
+  NodeKind kind; // Node kind
+  Node *next;    // Next node
+  Node *lhs;     // Left-hand side
+  Node *rhs;     // Right-hand side
+  Var *var;      // Used if kind == ND_VAR
+  int val;       // Used if kind == ND_NUM
 };
 
-// programの型
 typedef struct {
   Node *node;
   Var *locals;
   int stack_size;
 } Program;
-
-// 複数のnodeを保存
-// extern Node *code[100];
 
 Program *program();
 
