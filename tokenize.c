@@ -1,8 +1,8 @@
+#include "poacc.h"
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include "poacc.h"
 
 // 入力
 char *user_input;
@@ -75,9 +75,7 @@ int expect_number() {
 }
 
 // 現在のtokenがEOFであるかどうか
-bool at_eof() {
-  return token->kind == TK_EOF;
-}
+bool at_eof() { return token->kind == TK_EOF; }
 
 // 新しいtokenを作成し, それを`cur`の次のtokenとして追加する
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
@@ -90,9 +88,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
 }
 
 // `p`が`q`で始まるかどうか
-bool startswith(char *p, char *q) {
-  return memcmp(p, q, strlen(q)) == 0;
-}
+bool startswith(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }
 
 // `c`がアルファベットかアンダースコアかどうか
 bool is_alpha(char c) {
@@ -100,13 +96,11 @@ bool is_alpha(char c) {
 }
 
 // `c`がアルファベットか数字かどうか
-bool is_alnum(char c) {
-  return is_alpha(c) || ('0' <= c && c <= '9');
-}
+bool is_alnum(char c) { return is_alpha(c) || ('0' <= c && c <= '9'); }
 
 char *starts_with_reserved(char *p) {
   // Keyword
-  static char *kw[] = {"return", "if", "else"};
+  static char *kw[] = {"return", "if", "else", "while"};
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
     if (startswith(p, kw[i]) && !is_alnum(p[len]))
@@ -136,7 +130,7 @@ Token *tokenize() {
 
     // Keyword or 複数文字
     char *kw = starts_with_reserved(p);
-    if(kw){
+    if (kw) {
       int len = strlen(kw);
       cur = new_token(TK_RESERVED, cur, p, len);
       p += len;

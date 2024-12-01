@@ -29,49 +29,61 @@ void store() {
 // Generate code for a given node.
 void gen(Node *node) {
   switch (node->kind) {
-    case NODE_NUM:
-      printf("    push %d\n", node->val);
-      return;
-    case NODE_EXPR_STMT:
-      gen(node->lhs);
-      printf("    add rsp, 8\n");
-      return;
-    case NODE_VAR:
-      gen_addr(node);
-      load();
-      return;
-    case NODE_ASSIGN:
-      gen_addr(node->lhs);
-      gen(node->rhs);
-      store();
-      return;
-    case NODE_IF: {
-      int seq = labelseq++;
-      if(node->els) {
-        gen(node->cond);
-        printf("    pop rax\n");
-        printf("    cmp rax, 0\n");
-        printf("    je .Lelse%d\n", seq);
-        gen(node->then);
-        printf("    jmp .Lend%d\n", seq);
-        printf(".Lelse%d:\n", seq);
-        gen(node->els);
-        printf(".Lend%d:\n", seq);
-      } else {
-        gen(node->cond);
-        printf("    pop rax\n");
-        printf("    cmp rax, 0\n");
-        printf("    je  .Lend%d\n", seq);
-        gen(node->then);
-        printf(".Lend%d:\n", seq);
-      }
-      return;
-    }
-    case NODE_RETURN:
-      gen(node->lhs);
+  case NODE_NUM:
+    printf("    push %d\n", node->val);
+    return;
+  case NODE_EXPR_STMT:
+    gen(node->lhs);
+    printf("    add rsp, 8\n");
+    return;
+  case NODE_VAR:
+    gen_addr(node);
+    load();
+    return;
+  case NODE_ASSIGN:
+    gen_addr(node->lhs);
+    gen(node->rhs);
+    store();
+    return;
+  case NODE_IF: {
+    int seq = labelseq++;
+    if (node->els) {
+      gen(node->cond);
       printf("    pop rax\n");
-      printf("    jmp .Lreturn\n");
-      return;
+      printf("    cmp rax, 0\n");
+      printf("    je .Lelse%d\n", seq);
+      gen(node->then);
+      printf("    jmp .Lend%d\n", seq);
+      printf(".Lelse%d:\n", seq);
+      gen(node->els);
+      printf(".Lend%d:\n", seq);
+    } else {
+      gen(node->cond);
+      printf("    pop rax\n");
+      printf("    cmp rax, 0\n");
+      printf("    je  .Lend%d\n", seq);
+      gen(node->then);
+      printf(".Lend%d:\n", seq);
+    }
+    return;
+  }
+  case NODE_WHILE: {
+    int seq = labelseq++;
+    printf(".Lbegin%d:\n", seq);
+    gen(node->cond);
+    printf("    pop rax\n");
+    printf("    cmp rax, 0\n");
+    printf("    je  .Lend%d\n", seq);
+    gen(node->then);
+    printf("    jmp .Lbegin%d\n", seq);
+    printf(".Lend%d:\n", seq);
+    return;
+  }
+  case NODE_RETURN:
+    gen(node->lhs);
+    printf("    pop rax\n");
+    printf("    jmp .Lreturn\n");
+    return;
   }
 
   gen(node->lhs);

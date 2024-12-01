@@ -1,6 +1,6 @@
+#include "poacc.h"
 #include <stdlib.h>
 #include <string.h>
-#include "poacc.h"
 
 Var *locals;
 
@@ -85,12 +85,11 @@ Program *program() {
   return prog;
 }
 
-Node *read_expr_stmt() {
-  return new_unary(NODE_EXPR_STMT, expr());
-}
+Node *read_expr_stmt() { return new_unary(NODE_EXPR_STMT, expr()); }
 
 // `stmt = "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt)?
+//        | "while" "(" expr ")" stmt
 //        | expr ";"`
 Node *stmt() {
   if (consume("return")) {
@@ -99,14 +98,23 @@ Node *stmt() {
     return node;
   }
 
-  if(consume("if")) {
+  if (consume("if")) {
     Node *node = new_node(NODE_IF);
     expect("(");
     node->cond = expr();
     expect(")");
     node->then = stmt();
-    if(consume("else"))
+    if (consume("else"))
       node->els = stmt();
+    return node;
+  }
+
+  if (consume("while")) {
+    Node *node = new_node(NODE_WHILE);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
     return node;
   }
 
@@ -116,9 +124,7 @@ Node *stmt() {
 }
 
 // `expr = assign`
-Node *expr() {
-  return assign();
-}
+Node *expr() { return assign(); }
 
 // `assign = equality ("=" assign)?`
 Node *assign() {
