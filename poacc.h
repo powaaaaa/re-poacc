@@ -50,9 +50,14 @@ extern Token *token;
 // ローカル変数
 typedef struct Var Var;
 struct Var {
-  Var *next;
   char *name; // 変数名
   int offset; // RBPからのoffset
+};
+
+typedef struct VarList VarList;
+struct VarList {
+  VarList *next;
+  Var *var;
 };
 
 // AST node
@@ -108,8 +113,9 @@ typedef struct Function Function;
 struct Function {
   Function *next;
   char *name;
+  VarList *params;
   Node *node;
-  Var *locals;
+  VarList *locals;
   int stack_size;
 };
 

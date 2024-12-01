@@ -188,17 +188,28 @@ void gen(Node *node) {
 
 void codegen(Function *prog) {
   printf(".intel_syntax noprefix\n");
+
   for (Function *fn = prog; fn; fn = fn->next) {
     printf(".global %s\n", fn->name);
     printf("%s:\n", fn->name);
     funcname = fn->name;
+
     // Prologue
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", fn->stack_size);
+
+    // push arguments to the stack
+    int i = 0;
+    for (VarList *vl = fn->params; vl; vl = vl->next) {
+      Var *var = vl->var;
+      printf("    mov [rbp-%d], %s\n", var->offset, argreg[i++]);
+    }
+
     // Emit code
     for (Node *node = fn->node; node; node = node->next)
       gen(node);
+
     // Epilogue
     printf(".Lreturn.%s:\n", funcname);
     printf("  mov rsp, rbp\n");
