@@ -12,6 +12,12 @@ poacc: $(OBJS)
 %.o: %.c
 	$(DOCKER) gcc -c -o $@ $<
 
+run: poacc
+	$(DOCKER) ./poacc "$(INPUT)" > tmp.s
+	$(DOCKER) gcc -o tmp tmp.s
+	$(DOCKER) ./tmp
+	$(DOCKER) echo $?
+
 test: poacc
 	$(DOCKER) ./test.sh
 

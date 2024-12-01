@@ -66,6 +66,7 @@ typedef enum {
   NODE_LE,        // <=
   NODE_ASSIGN,    // =
   NODE_RETURN,    // "return"
+  NODE_IF,        // "if"
   NODE_EXPR_STMT, // Expression statement
   NODE_VAR,       // 変数
   NODE_NUM,       // 整数
@@ -76,10 +77,17 @@ typedef struct Node Node;
 struct Node {
   NodeKind kind; // Node kind
   Node *next;    // Next node
+
   Node *lhs;     // Left-hand side
   Node *rhs;     // Right-hand side
-  Var *var;      // Used if kind == ND_VAR
-  int val;       // Used if kind == ND_NUM
+  
+  // "if" statement
+  Node *cond;
+  Node *then;
+  Node *els;
+
+  Var *var;      // Used if kind == NODE_VAR
+  int val;       // Used if kind == NODE_NUM
 };
 
 typedef struct {
