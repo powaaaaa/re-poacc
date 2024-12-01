@@ -56,6 +56,7 @@ Var *push_var(char *name) {
   return var;
 }
 
+Function *function();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -82,23 +83,42 @@ Node *func_args() {
   return head;
 }
 
-// `program = stmt*`
-Program *program() {
+// `program = function*`
+Function *program() {
+  Function head;
+  head.next = NULL;
+  Function *cur = &head;
+
+  while (!at_eof()) {
+    cur->next = function();
+    cur = cur->next;
+  }
+
+  return head.next;
+}
+
+// `function = ident "(" ")" "{" stmt* "}"`
+Function *function() {
   locals = NULL;
 
+  char *name = expect_ident();
+  expect("(");
+  expect(")");
+  expect("{");
   Node head;
   head.next = NULL;
   Node *cur = &head;
 
-  while (!at_eof()) {
+  while (!consume("}")) {
     cur->next = stmt();
     cur = cur->next;
   }
 
-  Program *prog = calloc(1, sizeof(Program));
-  prog->node = head.next;
-  prog->locals = locals;
-  return prog;
+  Function *fn = calloc(1, sizeof( Function));
+  fn->name = name;
+  fn->node = head.next;
+  fn->locals = locals;
+  return fn;
 }
 
 Node *read_expr_stmt() { return new_unary(NODE_EXPR_STMT, expr()); }
@@ -270,13 +290,13 @@ Node *primary() {
   if (tok) {
     if (consume("(")) {
       Node *node = new_node(NODE_FUNCALL);
-      node->funcname = strndup(tok->str, tok->len);
+      node->funcname = strndupl(tok->str, tok->len);
       node->args = func_args();
       return node;
     }
     Var *var = find_var(tok);
     if (!var)
-      var = push_var(strndup(tok->str, tok->len));
+      var = push_var(strndupl(tok->str, tok->len));
     return new_var(var);
   }
 

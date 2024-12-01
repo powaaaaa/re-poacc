@@ -74,6 +74,14 @@ int expect_number() {
   return val;
 }
 
+char *expect_ident() {
+  if (token->kind != TK_IDENT)
+    error_at(token->str, "expected an identifier");
+  char *s = strndupl(token->str, token->len);
+  token = token->next;
+  return s;
+}
+
 // 現在のtokenがEOFであるかどうか
 bool at_eof() { return token->kind == TK_EOF; }
 
