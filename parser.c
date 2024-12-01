@@ -66,6 +66,22 @@ Node *mul();
 Node *unary();
 Node *primary();
 
+// func-args = "(" assign ("," assign)*? ")"
+Node *func_args() {
+  if (consume(")"))
+    return NULL;
+
+  Node *head = assign();
+  Node *cur = head;
+  while (consume(",")) {
+    cur->next = assign();
+    cur = cur->next;
+  }
+
+  expect(")");
+  return head;
+}
+
 // `program = stmt*`
 Program *program() {
   locals = NULL;
@@ -253,14 +269,14 @@ Node *primary() {
   Token *tok = consume_ident();
   if (tok) {
     if (consume("(")) {
-      expect(")");
       Node *node = new_node(NODE_FUNCALL);
       node->funcname = strndup(tok->str, tok->len);
+      node->args = func_args();
       return node;
     }
     Var *var = find_var(tok);
     if (!var)
-      var = push_var(strndupl(tok->str, tok->len));
+      var = push_var(strndup(tok->str, tok->len));
     return new_var(var);
   }
 

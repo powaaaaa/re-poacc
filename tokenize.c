@@ -138,7 +138,7 @@ Token *tokenize() {
     }
 
     // 1文字
-    if (strchr("+-*/()<>;={}", *p)) {
+    if (strchr("+-*/()<>;={},", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
