@@ -88,6 +88,7 @@ Program *program() {
 Node *read_expr_stmt() { return new_unary(NODE_EXPR_STMT, expr()); }
 
 // `stmt = "return" expr ";"
+//        | "{" stmt* "}"
 //        | "if" "(" expr ")" stmt ("else" stmt)?
 //        | "while" "(" expr ")" stmt
 //        | "for" "(" expr? ";" expr? ";" expr?")"
@@ -135,6 +136,21 @@ Node *stmt() {
       expect(")");
     }
     node->then = stmt();
+    return node;
+  }
+
+  if (consume("{")) {
+    Node head;
+    head.next = NULL;
+    Node *cur = &head;
+
+    while (!consume("}")) {
+      cur->next = stmt();
+      cur = cur->next;
+    }
+
+    Node *node = new_node(NODE_BLOCK);
+    node->body = head.next;
     return node;
   }
 

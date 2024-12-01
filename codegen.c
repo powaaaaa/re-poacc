@@ -97,6 +97,10 @@ void gen(Node *node) {
     printf(".Lend%d:\n", seq);
     return;
   }
+  case NODE_BLOCK:
+    for (Node *n = node->body; n; n = n->next)
+      gen(n);
+    return;
   case NODE_RETURN:
     gen(node->lhs);
     printf("    pop rax\n");

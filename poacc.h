@@ -69,6 +69,7 @@ typedef enum {
   NODE_IF,        // "if"
   NODE_WHILE,     // "while"
   NODE_FOR,       // "for"
+  NODE_BLOCK,     // { ... }
   NODE_EXPR_STMT, // Expression statement
   NODE_VAR,       // 変数
   NODE_NUM,       // 整数
@@ -89,6 +90,9 @@ struct Node {
   Node *els;
   Node *init;
   Node *inc;
+
+  // Block
+  Node *body;
 
   Var *var; // Used if kind == NODE_VAR
   int val;  // Used if kind == NODE_NUM
