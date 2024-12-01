@@ -90,6 +90,7 @@ Node *read_expr_stmt() { return new_unary(NODE_EXPR_STMT, expr()); }
 // `stmt = "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt)?
 //        | "while" "(" expr ")" stmt
+//        | "for" "(" expr? ";" expr? ";" expr?")"
 //        | expr ";"`
 Node *stmt() {
   if (consume("return")) {
@@ -114,6 +115,25 @@ Node *stmt() {
     expect("(");
     node->cond = expr();
     expect(")");
+    node->then = stmt();
+    return node;
+  }
+
+  if (consume("for")) {
+    Node *node = new_node(NODE_FOR);
+    expect("(");
+    if (!consume(";")) {
+      node->init = read_expr_stmt();
+      expect(";");
+    }
+    if (!consume(";")) {
+      node->cond = expr();
+      expect(";");
+    }
+    if (!consume(")")) {
+      node->inc = read_expr_stmt();
+      expect(")");
+    }
     node->then = stmt();
     return node;
   }

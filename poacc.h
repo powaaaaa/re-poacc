@@ -68,6 +68,7 @@ typedef enum {
   NODE_RETURN,    // "return"
   NODE_IF,        // "if"
   NODE_WHILE,     // "while"
+  NODE_FOR,       // "for"
   NODE_EXPR_STMT, // Expression statement
   NODE_VAR,       // 変数
   NODE_NUM,       // 整数
@@ -82,10 +83,12 @@ struct Node {
   Node *lhs; // Left-hand side
   Node *rhs; // Right-hand side
 
-  // "if" | "while" statement
+  // "if" | "while" | "for" statement
   Node *cond;
   Node *then;
   Node *els;
+  Node *init;
+  Node *inc;
 
   Var *var; // Used if kind == NODE_VAR
   int val;  // Used if kind == NODE_NUM
