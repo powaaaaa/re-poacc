@@ -4,16 +4,11 @@
 
 VarList *locals;
 VarList *globals;
+VarList *scope;
 
-// 変数名からVarを探す
+// Find a variable by name.
 Var *find_var(Token *tok) {
-  for (VarList *vl = locals; vl; vl = vl->next) {
-    Var *var = vl->var;
-    if (strlen(var->name) == tok->len && !memcmp(tok->str, var->name, tok->len))
-      return var;
-  }
-
-  for (VarList *vl = globals; vl; vl = vl->next) {
+  for (VarList *vl = scope; vl; vl = vl->next) {
     Var *var = vl->var;
     if (strlen(var->name) == tok->len && !memcmp(tok->str, var->name, tok->len))
       return var;
@@ -75,7 +70,19 @@ Var *push_var(char *name, Type *ty, bool is_local) {
     globals = vl;
   }
 
+  VarList *sc = calloc(1, sizeof(VarList));
+  sc->var = var;
+  sc->next = scope;
+  scope = sc;
+
   return var;
+}
+
+char *new_label() {
+  static int cnt = 0;
+  char buf[20];
+  sprintf(buf, ".L.data.%d", cnt++);
+  return strndupl(buf, 20);
 }
 
 Function *function();
@@ -123,10 +130,16 @@ Program *program() {
   return prog;
 }
 
-// basetype = "int" "*"*
+// basetype = ("char" | "int") "*"*
 Type *basetype() {
-  expect("int");
-  Type *ty = int_type();
+  Type *ty;
+  if (consume("char")) {
+    ty = char_type();
+  } else {
+    expect("int");
+    ty = int_type();
+  }
+
   while (consume("*"))
     ty = pointer_to(ty);
   return ty;
@@ -227,6 +240,8 @@ Node *read_expr_stmt() {
   return new_unary(NODE_EXPR_STMT, expr(), tok);
 }
 
+bool is_typename() { return peek("char") || peek("int"); }
+
 // `stmt = "return" expr ";"
 //        | "{" stmt* "}"
 //        | "if" "(" expr ")" stmt ("else" stmt)?
@@ -286,17 +301,19 @@ Node *stmt() {
     head.next = NULL;
     Node *cur = &head;
 
+    VarList *sc = scope;
     while (!consume("}")) {
       cur->next = stmt();
       cur = cur->next;
     }
+    scope = sc;
 
     Node *node = new_node(NODE_BLOCK, tok);
     node->body = head.next;
     return node;
   }
 
-  if (tok = peek("int"))
+  if (is_typename())
     return declaretion();
 
   Node *node = read_expr_stmt();
@@ -409,6 +426,30 @@ Node *postfix() {
   return node;
 }
 
+// `stmt-expr = "(" "{" stmt stmt* "}" ")"`
+//
+// statement expression is a GNU C extension.
+Node *stmt_expr(Token *tok) {
+  VarList *sc = scope;
+
+  Node *node = new_node(NODE_STMT_EXPR, tok);
+  node->body = stmt();
+  Node *cur = node->body;
+
+  while (!consume("}")) {
+    cur->next = stmt();
+    cur = cur->next;
+  }
+  expect(")");
+
+  scope = sc;
+
+  if (cur->kind != NODE_EXPR_STMT)
+    error_tok(cur->tok, "stmt expr returning void is not supported");
+  *cur = *cur->lhs;
+  return node;
+}
+
 // func-args = "(" assign ("," assign)*? ")"
 Node *func_args() {
   if (consume(")"))
@@ -425,19 +466,24 @@ Node *func_args() {
   return head;
 }
 
-// `primary = "(" expr ")"
+// `primary = "(" "{" stmt-expr-tail
+//            | "(" expr ")"
 //            | "sizeof" unary
 //            | ident args?
+//            | str
 //            | num`
 // `args = "(" ")"`
 Node *primary() {
+  Token *tok;
   if (consume("(")) {
+    if (consume("{"))
+      return stmt_expr(tok);
+
     Node *node = expr();
     expect(")");
     return node;
   }
 
-  Token *tok;
   if (tok = consume("sizeof"))
     return new_unary(NODE_SIZEOF, unary(), tok);
 
@@ -455,6 +501,16 @@ Node *primary() {
   }
 
   tok = token;
+  if (tok->kind == TK_STR) {
+    token = token->next;
+
+    Type *ty = array_of(char_type(), tok->cont_len);
+    Var *var = push_var(new_label(), ty, false);
+    var->contents = tok->contents;
+    var->cont_len = tok->cont_len;
+    return new_var(var, tok);
+  }
+
   if (tok->kind != TK_NUM)
     error_tok(tok, "expected expression");
   return new_num(expect_number(), tok);

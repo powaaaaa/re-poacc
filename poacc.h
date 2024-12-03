@@ -2,8 +2,11 @@
 #define POACC_H
 
 #include <assert.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct Type Type;
 
@@ -15,6 +18,7 @@ typedef struct Type Type;
 typedef enum {
   TK_RESERVED, // Keywords or punctuators
   TK_IDENT,    // 識別子
+  TK_STR,      // 文字列リテラル
   TK_NUM,      // 整数リテラル
   TK_EOF,      // EOFマーカー
 } TokenKind;
@@ -27,6 +31,9 @@ struct Token {
   int val;        // TK_NUM時の値
   char *str;      // tokenの文字列
   int len;        // tokenの長さ
+
+  char *contents; // string literal contents including termination '\0'
+  char cont_len;  // string literal length
 };
 
 void error(char *fmt, ...);
@@ -44,7 +51,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 Token *tokenize();
 
 // グローバル変数
-
+extern char *filename;
 extern char *user_input;
 extern Token *token;
 
@@ -61,6 +68,10 @@ struct Var {
 
   // local variable
   int offset; // Offset from RBP
+
+  // global variable
+  char *contents;
+  int cont_len;
 };
 
 typedef struct VarList VarList;
@@ -90,6 +101,7 @@ typedef enum {
   NODE_BLOCK,     // { ... }
   NODE_FUNCALL,   // Function call
   NODE_EXPR_STMT, // Expression statement
+  NODE_STMT_EXPR, // Statement expression
   NODE_VAR,       // 変数
   NODE_NUM,       // 整数
   NODE_NULL,      // Empty statement
@@ -113,7 +125,7 @@ struct Node {
   Node *init;
   Node *inc;
 
-  // Block
+  // Block or statement expression
   Node *body;
 
   // Function call
@@ -151,7 +163,7 @@ void codegen(Program *prog);
 ******** TYPE ********
 */
 
-typedef enum { TY_INT, TY_PTR, TY_ARRAY } TypeKind;
+typedef enum { TY_CHAR, TY_INT, TY_PTR, TY_ARRAY } TypeKind;
 
 struct Type {
   TypeKind kind;
@@ -159,6 +171,7 @@ struct Type {
   int array_size;
 };
 
+Type *char_type();
 Type *int_type();
 Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);

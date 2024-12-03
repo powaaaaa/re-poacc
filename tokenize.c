@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *filename;
+
 // 入力
 char *user_input;
 // 現在のtoken
@@ -19,9 +21,27 @@ void error(char *fmt, ...) {
 }
 
 // エラー箇所を報告
+//
+// foo.c:10: x = y + 1;
+//               ^ <error message here>
 void verror_at(char *loc, char *fmt, va_list ap) {
-  int pos = loc - user_input;
-  fprintf(stderr, "%s\n", user_input);
+  // Find a line containing `loc`.
+  char *line = loc;
+  while (user_input < line && line[-1] != '\n')
+    line--;
+  char *end = loc;
+  while (*end != '\n')
+    end++;
+  // Get a line number.
+  int line_num = 1;
+  for (char *p = user_input; p < line; p++)
+    if (*p == '\n')
+      line_num++;
+  // Print out the line.
+  int indent = fprintf(stderr, "%s:%d: ", filename, line_num);
+  fprintf(stderr, "%.*s\n", (int)(end - line), line);
+  // Show the error message.
+  int pos = loc - line + indent;
   fprintf(stderr, "%*s", pos, ""); // print pos spaces.
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
@@ -129,7 +149,8 @@ bool is_alnum(char c) { return is_alpha(c) || ('0' <= c && c <= '9'); }
 
 char *starts_with_reserved(char *p) {
   // Keyword
-  static char *kw[] = {"return", "if", "else", "while", "for", "int", "sizeof"};
+  static char *kw[] = {"return", "if",  "else", "while",
+                       "for",    "int", "char", "sizeof"};
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
     if (startswith(p, kw[i]) && !is_alnum(p[len]))
@@ -141,6 +162,57 @@ char *starts_with_reserved(char *p) {
     if (startswith(p, ops[i]))
       return ops[i];
   return NULL;
+}
+
+char get_escape_char(char c) {
+  switch (c) {
+  case 'a':
+    return '\a';
+  case 'b':
+    return '\b';
+  case 't':
+    return '\t';
+  case 'n':
+    return '\n';
+  case 'v':
+    return '\v';
+  case 'f':
+    return '\f';
+  case 'r':
+    return '\r';
+  case 'e':
+    return 27;
+  case '0':
+    return 0;
+  default:
+    return c;
+  }
+}
+
+Token *read_string_literal(Token *cur, char *start) {
+  char *p = start + 1;
+  char buf[1024];
+  int len = 0;
+  for (;;) {
+    if (len == sizeof(buf))
+      error_at(start, "string literal too large");
+    if (*p == '\0')
+      error_at(start, "unclosed string literal");
+    if (*p == '"')
+      break;
+    if (*p == '\\') {
+      p++;
+      buf[len++] = get_escape_char(*p++);
+    } else {
+      buf[len++] = *p++;
+    }
+  }
+  Token *tok = new_token(TK_STR, cur, start, p - start + 1);
+  tok->contents = malloc(len + 1);
+  memcpy(tok->contents, buf, len);
+  tok->contents[len] = '\0';
+  tok->cont_len = len + 1;
+  return tok;
 }
 
 // `userInput`をトークン分割して新しいtokenを返す
@@ -157,6 +229,22 @@ Token *tokenize() {
       continue;
     }
 
+    // Skip line comments.
+    if (startswith(p, "//")) {
+      p += 2;
+      while (*p != '\n')
+        p++;
+      continue;
+    }
+    // Skip block comments.
+    if (startswith(p, "/*")) {
+      char *q = strstr(p + 2, "*/");
+      if (!q)
+        error_at(p, "unclosed block comment");
+      p = q + 2;
+      continue;
+    }
+
     // Keyword or 複数文字
     char *kw = starts_with_reserved(p);
     if (kw) {
@@ -169,6 +257,13 @@ Token *tokenize() {
     // 1文字
     if (strchr("+-*/()<>;={},&[]", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
+
+    // String literal
+    if (*p == '"') {
+      cur = read_string_literal(cur, p);
+      p += cur->len;
       continue;
     }
 

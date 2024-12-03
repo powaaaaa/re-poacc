@@ -14,7 +14,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./poacc "$input" > tmp.s
+  ./poacc <(echo "$input") > tmp.s
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
@@ -180,5 +180,50 @@ assert 2 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[2]; }'
 assert 3 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }'
 assert 8 'int x; int main() { return sizeof(x); }'
 assert 32 'int x[4]; int main() { return sizeof(x); }'
+
+# step24 文字型
+assert 1 'int main() { char x=1; return x; }'
+assert 1 'int main() { char x=1; char y=2; return x; }'
+assert 2 'int main() { char x=1; char y=2; return y; }'
+assert 1 'int main() { char x; return sizeof(x); }'
+assert 10 'int main() { char x[10]; return sizeof(x); }'
+assert 1 'int main() { return sub_char(7, 3, 3); } int sub_char(char a, char b, char c) { return a-b-c; }'
+
+# step25 文字列リテラル
+assert 97 'int main() { return "abc"[0]; }'
+assert 98 'int main() { return "abc"[1]; }'
+assert 99 'int main() { return "abc"[2]; }'
+assert 0 'int main() { return "abc"[3]; }'
+assert 4 'int main() { return sizeof("abc"); }'
+
+# \a、\b、\t、\n \v、\f、\r、\e、\0 
+assert 7 'int main() { return "\a"[0]; }'
+assert 8 'int main() { return "\b"[0]; }'
+assert 9 'int main() { return "\t"[0]; }'
+assert 10 'int main() { return "\n"[0]; }'
+assert 11 'int main() { return "\v"[0]; }'
+assert 12 'int main() { return "\f"[0]; }'
+assert 13 'int main() { return "\r"[0]; }'
+assert 27 'int main() { return "\e"[0]; }'
+assert 0 'int main() { return "\0"[0]; }'
+assert 106 'int main() { return "\j"[0]; }'
+assert 107 'int main() { return "\k"[0]; }'
+assert 108 'int main() { return "\l"[0]; }'
+
+# gnu
+assert 0 'int main() { return ({ 0; }); }'
+assert 2 'int main() { return ({ 0; 1; 2; }); }'
+assert 1 'int main() { ({ 0; return 1; 2; }); return 3; }'
+assert 3 'int main() { return ({ int x=3; x; }); }'
+
+# step27 コメント
+assert 2 'int main() { /* return 1; */ return 2; }'
+assert 2 'int main() { // return 1;
+return 2; }'
+
+# ブロックスコープ
+assert 2 'int main() { int x=2; { int x=3; } return x; }'
+assert 2 'int main() { int x=2; { int x=3; } { int y=4; return x; }}'
+assert 3 'int main() { int x=2; { x=3; } return x; }'
 
 echo OK
