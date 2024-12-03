@@ -73,23 +73,8 @@ Node *relational();
 Node *add();
 Node *mul();
 Node *unary();
+Node *postfix();
 Node *primary();
-
-// func-args = "(" assign ("," assign)*? ")"
-Node *func_args() {
-  if (consume(")"))
-    return NULL;
-
-  Node *head = assign();
-  Node *cur = head;
-  while (consume(",")) {
-    cur->next = assign();
-    cur = cur->next;
-  }
-
-  expect(")");
-  return head;
-}
 
 // `program = function*`
 Function *program() {
@@ -353,7 +338,8 @@ Node *mul() {
   }
 }
 
-// `unary = ("+" | "-" | "*" | "&" )? unary | primary`
+// `unary = ("+" | "-" | "*" | "&" )? unary
+//          | postfix`
 Node *unary() {
   Token *tok;
   if (tok = consume("+"))
@@ -364,7 +350,37 @@ Node *unary() {
     return new_unary(NODE_ADDR, unary(), tok);
   if (tok = consume("*"))
     return new_unary(NODE_DEREF, unary(), tok);
-  return primary();
+  return postfix();
+}
+
+// postfix = primary ("[" expr "]")*
+Node *postfix() {
+  Node *node = primary();
+  Token *tok;
+
+  while (tok = consume("[")) {
+    // x[y] is short for *(x+y)
+    Node *exp = new_binary(NODE_ADD, node, expr(), tok);
+    expect("]");
+    node = new_unary(NODE_DEREF, exp, tok);
+  }
+  return node;
+}
+
+// func-args = "(" assign ("," assign)*? ")"
+Node *func_args() {
+  if (consume(")"))
+    return NULL;
+
+  Node *head = assign();
+  Node *cur = head;
+  while (consume(",")) {
+    cur->next = assign();
+    cur = cur->next;
+  }
+
+  expect(")");
+  return head;
 }
 
 // `primary = "(" expr ")"
