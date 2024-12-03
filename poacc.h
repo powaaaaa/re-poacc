@@ -72,6 +72,8 @@ typedef enum {
   NODE_LT,        // <
   NODE_LE,        // <=
   NODE_ASSIGN,    // =
+  NODE_ADDR,      // unary &
+  NODE_DEREF,     // unary *
   NODE_RETURN,    // "return"
   NODE_IF,        // "if"
   NODE_WHILE,     // "while"
@@ -88,7 +90,7 @@ typedef struct Node Node;
 struct Node {
   NodeKind kind; // Node kind
   Node *next;    // Next node
-  Node *tok;     // Representative token
+  Token *tok;    // Representative token
 
   Node *lhs; // Left-hand side
   Node *rhs; // Right-hand side

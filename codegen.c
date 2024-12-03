@@ -1,5 +1,7 @@
 #include "poacc.h"
 
+void gen(Node *node);
+
 char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 int labelseq = 0;
@@ -7,9 +9,13 @@ char *funcname;
 
 // Pushes the given node's address to the stack.
 void gen_addr(Node *node) {
-  if (node->kind == NODE_VAR) {
+  switch (node->kind) {
+  case NODE_VAR:
     printf("    lea rax, [rbp-%d]\n", node->var->offset);
     printf("    push rax\n");
+    return;
+  case NODE_DEREF:
+    gen(node->lhs);
     return;
   }
 
@@ -47,6 +53,13 @@ void gen(Node *node) {
     gen_addr(node->lhs);
     gen(node->rhs);
     store();
+    return;
+  case NODE_ADDR:
+    gen_addr(node->lhs);
+    return;
+  case NODE_DEREF:
+    gen(node->lhs);
+    load();
     return;
   case NODE_IF: {
     int seq = labelseq++;
