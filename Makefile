@@ -19,7 +19,9 @@ run: poacc
 	$(DOCKER) echo $?
 
 test: poacc
-	$(DOCKER) ./test.sh
+	$(DOCKER) ./poacc tests > tmp.s
+	$(DOCKER) gcc -static -o tmp tmp.s
+	$(DOCKER) ./tmp
 
 clean:
 	$(DOCKER) rm -f poacc *.o *~ tmp*
