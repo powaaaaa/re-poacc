@@ -52,12 +52,15 @@ extern Token *token;
 ******** PARSER ********
 */
 
-// ローカル変数
+// 変数
 typedef struct Var Var;
 struct Var {
-  char *name; // 変数名
-  Type *ty;   // 型
-  int offset; // RBPからのoffset
+  char *name;    // 変数名
+  Type *ty;      // 型
+  bool is_local; // local or global
+
+  // local variable
+  int offset; // Offset from RBP
 };
 
 typedef struct VarList VarList;
@@ -83,6 +86,7 @@ typedef enum {
   NODE_IF,        // "if"
   NODE_WHILE,     // "while"
   NODE_FOR,       // "for"
+  NODE_SIZEOF,    // "sizeof"
   NODE_BLOCK,     // { ... }
   NODE_FUNCALL,   // Function call
   NODE_EXPR_STMT, // Expression statement
@@ -130,13 +134,18 @@ struct Function {
   int stack_size;
 };
 
-Function *program();
+typedef struct {
+  VarList *globals;
+  Function *fns;
+} Program;
+
+Program *program();
 
 /*
 ******** CODE GENERATOR ********
 */
 
-void codegen(Function *prog);
+void codegen(Program *prog);
 
 /*
 ******** TYPE ********
@@ -155,6 +164,6 @@ Type *pointer_to(Type *base);
 Type *array_of(Type *base, int size);
 int size_of(Type *ty);
 
-void add_type(Function *prog);
+void add_type(Program *prog);
 
 #endif // POACC_H

@@ -131,7 +131,7 @@ assert 7 'int main() { int x=3; int y=5; *(&x+1)=7; return y; }'
 assert 7 'int main() { int x=3; int y=5; *(&y-1)=7; return x; }'
 assert 8 'int main() { int x=3; int y=5; return foo(&x, y); } int foo(int *x, int y) { return *x + y; }'
 
-# step? 多次元配列
+# step21 多次元配列
 assert 3 'int main() { int x[2]; int *y=&x; *y=3; return *x; }'
 assert 3 'int main() { int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *x; }'
 assert 4 'int main() { int x[3]; *x=3; *(x+1)=4; *(x+2)=5; return *(x+1); }'
@@ -144,7 +144,7 @@ assert 4 'int main() { int x[2][3]; int *y=x; *(y+4)=4; return *(*(x+1)+1); }'
 assert 5 'int main() { int x[2][3]; int *y=x; *(y+5)=5; return *(*(x+1)+2); }'
 assert 6 'int main() { int x[2][3]; int *y=x; *(y+6)=6; return **(x+2); }'
 
-# step? []演算子を追加
+# step21 []演算子を追加
 assert 3 'int main() { int x[3]; *x=3; x[1]=4; x[2]=5; return *x; }'
 assert 4 'int main() { int x[3]; *x=3; x[1]=4; x[2]=5; return *(x+1); }'
 assert 5 'int main() { int x[3]; *x=3; x[1]=4; x[2]=5; return *(x+2); }'
@@ -158,5 +158,27 @@ assert 3 'int main() { int x[2][3]; int *y=x; y[3]=3; return x[1][0]; }'
 assert 4 'int main() { int x[2][3]; int *y=x; y[4]=4; return x[1][1]; }'
 assert 5 'int main() { int x[2][3]; int *y=x; y[5]=5; return x[1][2]; }'
 assert 6 'int main() { int x[2][3]; int *y=x; y[6]=6; return x[2][0]; }'
+
+# step20 sizeof
+assert 8 'int main() { int x; return sizeof(x); }'
+assert 8 'int main() { int x; return sizeof x; }'
+assert 8 'int main() { int *x; return sizeof(x); }'
+assert 32 'int main() { int x[4]; return sizeof(x); }'
+assert 96 'int main() { int x[3][4]; return sizeof(x); }'
+assert 32 'int main() { int x[3][4]; return sizeof(*x); }'
+assert 8 'int main() { int x[3][4]; return sizeof(**x); }'
+assert 9 'int main() { int x[3][4]; return sizeof(**x) + 1; }'
+assert 9 'int main() { int x[3][4]; return sizeof **x + 1; }'
+assert 8 'int main() { int x[3][4]; return sizeof(**x + 1); }'
+
+# step23 グローバル変数
+assert 0 'int x; int main() { return x; }'
+assert 3 'int x; int main() { x=3; return x; }'
+assert 0 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[0]; }'
+assert 1 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[1]; }'
+assert 2 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[2]; }'
+assert 3 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }'
+assert 8 'int x; int main() { return sizeof(x); }'
+assert 32 'int x[4]; int main() { return sizeof(x); }'
 
 echo OK

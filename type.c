@@ -87,10 +87,16 @@ void visit(Node *node) {
       error_tok(node->tok, "invalid pointer dereference");
     node->ty = node->lhs->ty->base;
     return;
+  case NODE_SIZEOF:
+    node->kind = NODE_NUM;
+    node->ty = int_type();
+    node->val = size_of(node->lhs->ty);
+    node->lhs = NULL;
+    return;
   }
 }
-void add_type(Function *prog) {
-  for (Function *fn = prog; fn; fn = fn->next)
+void add_type(Program *prog) {
+  for (Function *fn = prog->fns; fn; fn = fn->next)
     for (Node *node = fn->node; node; node = node->next)
       visit(node);
 }
