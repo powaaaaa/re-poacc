@@ -1,6 +1,7 @@
 #ifndef POACC_H
 #define POACC_H
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -141,15 +142,18 @@ void codegen(Function *prog);
 ******** TYPE ********
 */
 
-typedef enum { TY_INT, TY_PTR } TypeKind;
+typedef enum { TY_INT, TY_PTR, TY_ARRAY } TypeKind;
 
 struct Type {
   TypeKind kind;
   Type *base;
+  int array_size;
 };
 
 Type *int_type();
 Type *pointer_to(Type *base);
+Type *array_of(Type *base, int size);
+int size_of(Type *ty);
 
 void add_type(Function *prog);
 
