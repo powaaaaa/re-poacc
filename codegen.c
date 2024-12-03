@@ -38,6 +38,8 @@ void store() {
 // Generate code for a given node.
 void gen(Node *node) {
   switch (node->kind) {
+  case NODE_NULL:
+    return;
   case NODE_NUM:
     printf("    push %d\n", node->val);
     return;
@@ -162,9 +164,13 @@ void gen(Node *node) {
 
   switch (node->kind) {
   case NODE_ADD:
+    if (node->ty->kind == TY_PTR)
+      printf("    imul rdi, 8\n");
     printf("    add rax, rdi\n");
     break;
   case NODE_SUB:
+    if (node->ty->kind == TY_PTR)
+      printf("    imul rdi, 8\n");
     printf("    sub rax, rdi\n");
     break;
   case NODE_MUL:

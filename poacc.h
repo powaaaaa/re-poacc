@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+typedef struct Type Type;
+
 /*
 ******** TOKEN ********
 */
@@ -29,6 +31,7 @@ struct Token {
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 void error_tok(Token *tok, char *fmt, ...);
+Token *peek(char *s);
 Token *consume(char *op);
 char *strndupl(char *p, int len);
 Token *consume_ident();
@@ -52,6 +55,7 @@ extern Token *token;
 typedef struct Var Var;
 struct Var {
   char *name; // 変数名
+  Type *ty;   // 型
   int offset; // RBPからのoffset
 };
 
@@ -83,6 +87,7 @@ typedef enum {
   NODE_EXPR_STMT, // Expression statement
   NODE_VAR,       // 変数
   NODE_NUM,       // 整数
+  NODE_NULL,      // Empty statement
 } NodeKind;
 
 // AST node type
@@ -90,6 +95,7 @@ typedef struct Node Node;
 struct Node {
   NodeKind kind; // Node kind
   Node *next;    // Next node
+  Type *ty;      // e.g. int, pointer to int
   Token *tok;    // Representative token
 
   Node *lhs; // Left-hand side
@@ -130,5 +136,21 @@ Function *program();
 */
 
 void codegen(Function *prog);
+
+/*
+******** TYPE ********
+*/
+
+typedef enum { TY_INT, TY_PTR } TypeKind;
+
+struct Type {
+  TypeKind kind;
+  Type *base;
+};
+
+Type *int_type();
+Type *pointer_to(Type *base);
+
+void add_type(Function *prog);
 
 #endif // POACC_H

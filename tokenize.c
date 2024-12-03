@@ -53,10 +53,17 @@ char *strndupl(char *p, int len) {
   return buf;
 }
 
-// 現在のtokenが`op`のとき, tokenを1つ進める
-Token *consume(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
+// return true if the current token matches a given string
+Token *peek(char *s) {
+  if (token->kind != TK_RESERVED || strlen(s) != token->len ||
+      memcmp(token->str, s, token->len))
+    return NULL;
+  return token;
+}
+
+// 現在のtokenが`s`のとき, tokenを1つ進める
+Token *consume(char *s) {
+  if (!peek(s))
     return NULL;
   Token *t = token;
   token = token->next;
@@ -73,10 +80,9 @@ Token *consume_ident() {
 }
 
 // 現在のtokenが`op`であることを確認, tokenを1つ進める
-void expect(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len ||
-      memcmp(token->str, op, token->len))
-    error_tok(token, "expected \"%s\"", op);
+void expect(char *s) {
+  if (!peek(s))
+    error_tok(token, "expected \"%s\"", s);
   token = token->next;
 }
 
@@ -123,7 +129,7 @@ bool is_alnum(char c) { return is_alpha(c) || ('0' <= c && c <= '9'); }
 
 char *starts_with_reserved(char *p) {
   // Keyword
-  static char *kw[] = {"return", "if", "else", "while", "for"};
+  static char *kw[] = {"return", "if", "else", "while", "for", "int"};
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
     if (startswith(p, kw[i]) && !is_alnum(p[len]))
